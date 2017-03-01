@@ -6,19 +6,19 @@ def addSkim(process, isData=False, doJetFilter=True):
     print "triggerSelection should be verified for new datasets."
     process.triggerSelection = cms.EDFilter( "TriggerResultsFilter",
         triggerConditions = cms.vstring(
-            # EXO-16-003
-            'HLT_HT250_DisplacedDijet40_DisplacedTrack_v*',
-            'HLT_HT350_DisplacedDijet40_DisplacedTrack_v*',
-            'HLT_HT400_DisplacedDijet40_Inclusive_v*',
-            'HLT_HT500_DisplacedDijet40_Inclusive_v*',
+##            # EXO-16-003
+##            'HLT_HT250_DisplacedDijet40_DisplacedTrack_v*',
+##            'HLT_HT350_DisplacedDijet40_DisplacedTrack_v*',
+##            'HLT_HT400_DisplacedDijet40_Inclusive_v*',
+##            'HLT_HT500_DisplacedDijet40_Inclusive_v*',
 
-            # Data: Run2015*
-            'HLT_PFHT475_v*',
-            'HLT_PFHT600_v*',
-            'HLT_PFHT750_4Jet_v*',
-            'HLT_PFHT800_v*',
-            # MC: RunIISpring15DR74
-            #'HLT_PFHT900_v*',
+##            # Data: Run2015*
+##            'HLT_PFHT475_v*',
+##            'HLT_PFHT600_v*',
+##            'HLT_PFHT750_4Jet_v*',
+##            'HLT_PFHT800_v*',
+##            # MC: RunIISpring15DR74
+##            'HLT_PFHT900_v*',
         ),
         hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
         l1tResults = cms.InputTag( "gtDigis" ),
@@ -32,26 +32,37 @@ def addSkim(process, isData=False, doJetFilter=True):
         srcJets = cms.InputTag("ak4PFJetsCHS"),
         # srcJets = cms.InputTag("patJets"),
         # additionalCut = cms.string(""),
-        additionalCut = cms.string("abs(eta) < 2.5 && pt > 50.0"),
+##        additionalCut = cms.string("abs(eta) < 2.5 && pt > 50.0"),
+        additionalCut = cms.string("abs(eta) < 3.0 && pt > 40.0"),
         jetCuts = cms.VPSet(
+##            cms.PSet(
+##                minPt = cms.double(400.0),
+##                maxEta = cms.double(2.5),
+##                stringCut = cms.string(""),
+##                ),
+##            cms.PSet(
+##                minPt = cms.double(200.0),
+##                maxEta = cms.double(2.5),
+##                stringCut = cms.string(""),
+##                ),
+##            cms.PSet(
+##                minPt = cms.double(125.0),
+##                maxEta = cms.double(2.5),
+##                stringCut = cms.string(""),
+##                ),
+##            cms.PSet(
+##                minPt = cms.double(50.0),
+##                maxEta = cms.double(2.5),
+##                stringCut = cms.string(""),
+##                ),
             cms.PSet(
-                minPt = cms.double(400.0),
-                maxEta = cms.double(2.5),
+                minPt = cms.double(60.0),
+                maxEta = cms.double(3.0),
                 stringCut = cms.string(""),
                 ),
             cms.PSet(
-                minPt = cms.double(200.0),
-                maxEta = cms.double(2.5),
-                stringCut = cms.string(""),
-                ),
-            cms.PSet(
-                minPt = cms.double(125.0),
-                maxEta = cms.double(2.5),
-                stringCut = cms.string(""),
-                ),
-            cms.PSet(
-                minPt = cms.double(50.0),
-                maxEta = cms.double(2.5),
+                minPt = cms.double(40.0),
+                maxEta = cms.double(3.0),
                 stringCut = cms.string(""),
                 ),
         )

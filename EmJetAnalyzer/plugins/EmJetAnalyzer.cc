@@ -318,7 +318,7 @@ EmJetAnalyzer::EmJetAnalyzer(const edm::ParameterSet& iConfig):
     m_trackParameters.loadParameters( m_trackParameterSet, iC );
     m_trackAssociator.useDefaultPropagator();
 
-    jetCollectionToken_ = consumes< reco::PFJetCollection > (iConfig.getParameter<edm::InputTag>("srcJets"));
+    jetCollectionToken_ = consumes< reco::PFJetCollection >(iConfig.getParameter<edm::InputTag>("srcJets"));
     hlTriggerResultsToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag> ("hlTriggerResults"));
 
     // Register hard-coded inputs
@@ -377,7 +377,7 @@ bool EmJetAnalyzer::triggerfired(const edm::Event& ev, edm::Handle<edm::TriggerR
   for (unsigned int itr=0; itr<ntrigs; itr++){
     TString trigName=TrigNames_.triggerName(itr);
     if (!TRHandle_->accept(itr)) continue;
-    if(trigName.Contains(trigname))      return true;
+    if(trigName.Contains(trigname)) return true;
   }
   return false;
 }
@@ -447,11 +447,11 @@ EmJetAnalyzer::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     event_.HLT_HT500 = triggerfired(iEvent,trigResults,"HLT_HT500_DisplacedDijet40_Inclusive");
 
     // Emerging Jets Analysis Triggers
-    event_.HLT_PFHT400 = triggerfired(iEvent,trigResults,"HLT_PFHT400");
-    event_.HLT_PFHT475 = triggerfired(iEvent,trigResults,"HLT_PFHT475");
-    event_.HLT_PFHT600 = triggerfired(iEvent,trigResults,"HLT_PFHT600");
-    event_.HLT_PFHT800 = triggerfired(iEvent,trigResults,"HLT_PFHT800");
-    event_.HLT_PFHT900 = triggerfired(iEvent,trigResults,"HLT_PFHT900");
+    event_.HLT_PFHT400 = triggerfired(iEvent,trigResults,"HLT_PFHT400_v");
+    event_.HLT_PFHT475 = triggerfired(iEvent,trigResults,"HLT_PFHT475_v");
+    event_.HLT_PFHT600 = triggerfired(iEvent,trigResults,"HLT_PFHT600_v");
+    event_.HLT_PFHT800 = triggerfired(iEvent,trigResults,"HLT_PFHT800_v");
+    event_.HLT_PFHT900 = triggerfired(iEvent,trigResults,"HLT_PFHT900_v");
   }
 
   // Retrieve offline beam spot (Used to constrain vertexing)
