@@ -45,7 +45,7 @@ event_vars = [
     Var("met_phi"             , "float" , 0 , ) ,
     Var("nTracks"             , "int"   , 0 , ) ,
     # Primary vertex information
-    Var("pv_index"            , "float" , 0 , ) ,
+    Var("pv_indexInColl"      , "int"   , 0 , ) ,
     Var("pv_x"                , "float" , 0 , ) ,
     Var("pv_y"                , "float" , 0 , ) ,
     Var("pv_z"                , "float" , 0 , ) ,

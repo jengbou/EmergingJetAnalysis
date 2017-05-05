@@ -624,7 +624,7 @@ EmJetAnalyzer::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     TLorentzVector aa,bb;
     double trackWeight=0.;
     for ( auto trk = genTrackH->begin(); trk != genTrackH->end(); trk++ ) {
-      if((trk->qualityMask()>6)&&(trk->pt()>1) ) {
+      if((trk->qualityMask() & 4)&&(trk->pt()>1) ) {
 	aa.SetPxPyPzE(jet->px(),jet->py(),jet->pz(),jet->p());
 	bb.SetPxPyPzE(trk->px(),trk->py(),trk->pz(),trk->p());
 	float dr = aa.DeltaR(bb);
@@ -975,7 +975,7 @@ EmJetAnalyzer::prepareJetTrack(const reco::TransientTrack& itrack, const Jet& oj
   otrack.source = source;
   otrack.jet_index = jet_index_;
   auto itk = &itrack;
-  if (itrack.track().qualityMask() < 7) return;
+  if ( !(itrack.track().qualityMask() & 4) ) return;
   // Fill basic kinematic variables
   {
     otrack.pt  = itrack.track().pt()  ;
@@ -1102,7 +1102,7 @@ EmJetAnalyzer::selectTrack(const reco::TransientTrack& itrack) const
 {
   auto itk = &itrack;
   // Skip tracks with pt<1 :CUT:
-  if (itk->track().pt() < 1. || itk->track().qualityMask() < 7) return false;
+  if (itk->track().pt() < 1. || !(itk->track().qualityMask() & 4)) return false;
   return true;
 }
 
@@ -1307,7 +1307,7 @@ EmJetAnalyzer::compute_alphaMax(const reco::PFJet& ijet, reco::TrackRefVector& t
   // Loop over all tracks and calculate scalar pt-sum of all tracks in current jet
   double jet_pt_sum = 0.;
   for (reco::TrackRefVector::iterator ijt = trackRefs.begin(); ijt != trackRefs.end(); ++ijt) {
-    if ((*ijt)->qualityMask() < 7) continue;
+    if (!((*ijt)->qualityMask() & 4)) continue;
     jet_pt_sum += (*ijt)->pt();
   } // End of track loop
 
@@ -1317,7 +1317,7 @@ EmJetAnalyzer::compute_alphaMax(const reco::PFJet& ijet, reco::TrackRefVector& t
   for (auto ipv = primary_verticesH_->begin(); ipv != primary_verticesH_->end(); ++ipv) {
     double vertex_pt_sum = 0.; // scalar pt contribution of vertex to jet
     for (reco::TrackRefVector::iterator ijt = trackRefs.begin(); ijt != trackRefs.end(); ++ijt) {
-      if ((*ijt)->qualityMask() < 7) continue;
+      if (!((*ijt)->qualityMask() & 4)) continue;
       double trackWeight = ipv->trackWeight(*ijt);
       if (trackWeight > 0) vertex_pt_sum += (*ijt)->pt();
     } // End of track loop
