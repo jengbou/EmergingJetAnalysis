@@ -149,7 +149,7 @@ class EmJetAnalyzer : public edm::EDFilter {
     //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
     // n-tuple filling
-    void prepareJet(const reco::PFJet& ijet, Jet& ojet, int source, const edm::EventSetup& iSetup);
+    void prepareJet(const reco::PFJet& ijet, Jet& ojet, double alphaMax, int source, const edm::EventSetup& iSetup);
     void prepareJetTrack(const reco::TransientTrack& itrack, const Jet& ojet, Track& otrack, int source);
     void prepareJetVertex(const TransientVertex& ivertex, const Jet& ojet, Vertex& overtex, int source);
     void prepareJetVertexTrack(const reco::TransientTrack& itrack, const Jet& ojet, Track& otrack, const TransientVertex& ivertex, int source, const edm::EventSetup& iSetup);
@@ -173,6 +173,7 @@ class EmJetAnalyzer : public edm::EDFilter {
     int    compute_nDarkPions(const reco::PFJet& ijet) const;
     int    compute_nDarkGluons(const reco::PFJet& ijet) const;
     double compute_pt2Sum (const TransientVertex& ivertex) const;
+    double compute_alpha_global () const;
 
     // Utility functions
     reco::TrackRefVector MergeTracks(reco::TrackRefVector trks1,  reco::TrackRefVector trks2);
@@ -462,41 +463,59 @@ EmJetAnalyzer::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
 
   // Calculate basic primary vertex and pileup info :EVENTLEVEL:
-  {
-    // iEvent.getByLabel("offlinePrimaryVerticesWithBS", primary_verticesH_);
-    iEvent.getByLabel("offlinePrimaryVertices", primary_verticesH_);
-    const reco::Vertex& primary_vertex = primary_verticesH_->at(0);
-    if (!isData_) { // :MCONLY: Add true number of interactions
+  //{
+  // iEvent.getByLabel("offlinePrimaryVerticesWithBS", primary_verticesH_);
+  iEvent.getByLabel("offlinePrimaryVertices", primary_verticesH_);
+
+  // we see events where the primary vertex is the second
+  //    const reco::Vertex& primary_vertex = primary_verticesH_->at(0);
+
+  double sumptsmax=0.;
+  int ihaha = 0;
+  int ivvv=-1;
+  VertexHigherPtSquared vertexPt2Calculator;
+  for (auto ipv = primary_verticesH_->begin(); ipv != primary_verticesH_->end(); ++ipv) {
+      double pt2sum = vertexPt2Calculator.sumPtSquared(*ipv);
+      if(pt2sum>sumptsmax) {
+          sumptsmax=pt2sum;
+          ivvv=ihaha;
+      }
+      ihaha++;
+  }
+  const reco::Vertex& primary_vertex = primary_verticesH_->at(ivvv);
+
+  if (!isData_) { // :MCONLY: Add true number of interactions
       edm::Handle<std::vector<PileupSummaryInfo> > PileupInfo;
       iEvent.getByLabel("addPileupInfo", PileupInfo);
       for (auto const& puInfo : *PileupInfo) {
-        int bx = puInfo.getBunchCrossing();
-        if (bx == 0) {
-          event_.nTrueInt = puInfo.getTrueNumInteractions();
-        }
+          int bx = puInfo.getBunchCrossing();
+          if (bx == 0) {
+              event_.nTrueInt = puInfo.getTrueNumInteractions();
+          }
       }
-    }
-    for (auto ipv = primary_verticesH_->begin(); ipv != primary_verticesH_->end(); ++ipv) {
+  }
+  for (auto ipv = primary_verticesH_->begin(); ipv != primary_verticesH_->end(); ++ipv) {
       event_.nVtx ++;
       if ( (ipv->isFake()) || (ipv->ndof() <= 4.) || (ipv->position().Rho() > 2.0) || (fabs(ipv->position().Z()) > 24.0) ) continue; // :CUT: Primary vertex cut for counting
       event_.nGoodVtx++;
-    }
-
-    // Fill primary vertex information
-    VertexHigherPtSquared vertexPt2Calculator;
-    double pt2sum = vertexPt2Calculator.sumPtSquared(primary_vertex);
-    double nTracks = primary_vertex.tracksSize();
-    event_.pv_x         = primary_vertex.x();
-    event_.pv_y         = primary_vertex.y();
-    event_.pv_z         = primary_vertex.z();
-    event_.pv_xError    = primary_vertex.xError();
-    event_.pv_yError    = primary_vertex.yError();
-    event_.pv_zError    = primary_vertex.zError();
-    event_.pv_chi2      = primary_vertex.chi2();
-    event_.pv_ndof      = primary_vertex.ndof();
-    event_.pv_pt2sum    = pt2sum;
-    event_.pv_nTracks   = nTracks;
   }
+
+  // Fill primary vertex information
+  //VertexHigherPtSquared vertexPt2Calculator;
+  double pt2sum = vertexPt2Calculator.sumPtSquared(primary_vertex);
+  double nTracks = primary_vertex.tracksSize();
+  event_.pv_index     = ivvv;
+  event_.pv_x         = primary_vertex.x();
+  event_.pv_y         = primary_vertex.y();
+  event_.pv_z         = primary_vertex.z();
+  event_.pv_xError    = primary_vertex.xError();
+  event_.pv_yError    = primary_vertex.yError();
+  event_.pv_zError    = primary_vertex.zError();
+  event_.pv_chi2      = primary_vertex.chi2();
+  event_.pv_ndof      = primary_vertex.ndof();
+  event_.pv_pt2sum    = pt2sum;
+  event_.pv_nTracks   = nTracks;
+    //}
 
   // Fill PDF information :EVENTLEVEL:
   if (!isData_) { // :MCONLY:
@@ -596,8 +615,32 @@ EmJetAnalyzer::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   // Calculate Jet-level quantities and fill into jet_ :JETLEVEL:
   for ( reco::PFJetCollection::const_iterator jet = selectedJets_->begin(); jet != selectedJets_->end(); jet++ ) {
+
+    //calculate alpha max for the jet.  do it here since I can not figure out how to do this with transient tracks
+    double alphamax=-1;
+    float sumall = 0.;
+    float sumpass = 0.;
+    int ittt=0;
+    TLorentzVector aa,bb;
+    double trackWeight=0.;
+    for ( auto trk = genTrackH->begin(); trk != genTrackH->end(); trk++ ) {
+      if((trk->qualityMask()>6)&&(trk->pt()>1) ) {
+	aa.SetPxPyPzE(jet->px(),jet->py(),jet->pz(),jet->p());
+	bb.SetPxPyPzE(trk->px(),trk->py(),trk->pz(),trk->p());
+	float dr = aa.DeltaR(bb);
+	if(dr<0.4) {
+          reco::TrackRef trkref(genTrackH, ittt);
+          trackWeight = primary_vertex.trackWeight(trkref);
+          sumall+=trk->pt();
+          if(trackWeight>0) sumpass+=trk->pt();
+          if(sumall>0) alphamax=sumpass/sumall;
+	}
+      }
+      ittt++;
+    }
+
     // Fill Jet-level quantities
-    prepareJet(*jet, jet_, 1, iSetup); // source = 1 for PF jets :JETSOURCE:
+    prepareJet(*jet, jet_, alphamax, 1, iSetup); // source = 1 for PF jets :JETSOURCE:
 
     // Calculate Jet-Track-level quantities and fill into jet_ :JETTRACKLEVEL:
     for (std::vector<reco::TransientTrack>::iterator itk = generalTracks_.begin(); itk != generalTracks_.end(); ++itk) {
@@ -845,7 +888,7 @@ EmJetAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
 }
 
 void
-EmJetAnalyzer::prepareJet(const reco::PFJet& ijet, Jet& ojet, int source, const edm::EventSetup& iSetup)
+EmJetAnalyzer::prepareJet(const reco::PFJet& ijet, Jet& ojet, double alphamax, int source, const edm::EventSetup& iSetup)
 {
 
   pfjet++; // DEBUG
@@ -878,7 +921,8 @@ EmJetAnalyzer::prepareJet(const reco::PFJet& ijet, Jet& ojet, int source, const 
   // Fill alphaMax
   {
     reco::TrackRefVector trackRefs = ijet.getTrackRefs();
-    ojet.alphaMax = compute_alphaMax(ijet, trackRefs);
+    ojet.alphaMax = alphamax;
+    //ojet.alphaMax = compute_alphaMax(ijet, trackRefs);
     if (ojet.alphaMax==0) {
       // jetscan(ijet);
     }
@@ -931,6 +975,7 @@ EmJetAnalyzer::prepareJetTrack(const reco::TransientTrack& itrack, const Jet& oj
   otrack.source = source;
   otrack.jet_index = jet_index_;
   auto itk = &itrack;
+  if (itrack.track().qualityMask() < 7) return;
   // Fill basic kinematic variables
   {
     otrack.pt  = itrack.track().pt()  ;
@@ -1057,7 +1102,7 @@ EmJetAnalyzer::selectTrack(const reco::TransientTrack& itrack) const
 {
   auto itk = &itrack;
   // Skip tracks with pt<1 :CUT:
-  if (itk->track().pt() < 1.) return false;
+  if (itk->track().pt() < 1. || itk->track().qualityMask() < 7) return false;
   return true;
 }
 
@@ -1262,6 +1307,7 @@ EmJetAnalyzer::compute_alphaMax(const reco::PFJet& ijet, reco::TrackRefVector& t
   // Loop over all tracks and calculate scalar pt-sum of all tracks in current jet
   double jet_pt_sum = 0.;
   for (reco::TrackRefVector::iterator ijt = trackRefs.begin(); ijt != trackRefs.end(); ++ijt) {
+    if ((*ijt)->qualityMask() < 7) continue;
     jet_pt_sum += (*ijt)->pt();
   } // End of track loop
 
@@ -1271,6 +1317,7 @@ EmJetAnalyzer::compute_alphaMax(const reco::PFJet& ijet, reco::TrackRefVector& t
   for (auto ipv = primary_verticesH_->begin(); ipv != primary_verticesH_->end(); ++ipv) {
     double vertex_pt_sum = 0.; // scalar pt contribution of vertex to jet
     for (reco::TrackRefVector::iterator ijt = trackRefs.begin(); ijt != trackRefs.end(); ++ijt) {
+      if ((*ijt)->qualityMask() < 7) continue;
       double trackWeight = ipv->trackWeight(*ijt);
       if (trackWeight > 0) vertex_pt_sum += (*ijt)->pt();
     } // End of track loop
@@ -1465,6 +1512,11 @@ EmJetAnalyzer::compute_pt2Sum (const TransientVertex& ivertex) const {
       }
     }
   return sum;
+}
+
+double
+EmJetAnalyzer::compute_alpha_global () const {
+  return -999.999;
 }
 
 // Merge two TrackRefVector objects

@@ -182,8 +182,8 @@ JetFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
             nJetsPassing++;
           }
         }
-//       } else if (nJetsPassing > 3) {
-      } else if (nJetsPassing > 1) {
+      } else if (nJetsPassing > 3) {
+//       } else if (nJetsPassing > 1) {
         eventPassed = true;
         break;
       }

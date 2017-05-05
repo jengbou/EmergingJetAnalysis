@@ -32,6 +32,7 @@ namespace emjet
     float                   met_pt              ;
     float                   met_phi             ;
     int                     nTracks             ;
+    float                   pv_index            ;
     float                   pv_x                ;
     float                   pv_y                ;
     float                   pv_z                ;
@@ -172,6 +173,7 @@ emjet::OutputTree::Init() {
   met_pt              = -1;
   met_phi             = -1;
   nTracks             = -1;
+  pv_index            = -1;
   pv_x                = -1;
   pv_y                = -1;
   pv_z                = -1;
@@ -312,6 +314,7 @@ emjet::OutputTree::Branch(TTree* tree) {
   BRANCH(tree, met_pt              );
   BRANCH(tree, met_phi             );
   BRANCH(tree, nTracks             );
+  BRANCH(tree, pv_index            );
   BRANCH(tree, pv_x                );
   BRANCH(tree, pv_y                );
   BRANCH(tree, pv_z                );

@@ -49,6 +49,7 @@ namespace emjet
       met_pt               = DEFAULTVALUE;
       met_phi              = DEFAULTVALUE;
       nTracks              = DEFAULTVALUE;
+      pv_index             = DEFAULTVALUE;
       pv_x                 = DEFAULTVALUE;
       pv_y                 = DEFAULTVALUE;
       pv_z                 = DEFAULTVALUE;
@@ -95,6 +96,7 @@ namespace emjet
     float  met_pt              ;
     float  met_phi             ;
     int    nTracks             ;
+    float  pv_index            ;
     float  pv_x                ;
     float  pv_y                ;
     float  pv_z                ;
@@ -472,6 +474,7 @@ WriteEventToOutput(const Event& event, emjet::OutputTree* otree)
     otree->met_pt               = event.met_pt              ;
     otree->met_phi              = event.met_phi             ;
     otree->nTracks              = event.nTracks             ;
+    otree->pv_index             = event.pv_index            ;
     otree->pv_x                 = event.pv_x                ;
     otree->pv_y                 = event.pv_y                ;
     otree->pv_z                 = event.pv_z                ;
