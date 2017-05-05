@@ -504,7 +504,7 @@ EmJetAnalyzer::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   //VertexHigherPtSquared vertexPt2Calculator;
   double pt2sum = vertexPt2Calculator.sumPtSquared(primary_vertex);
   double nTracks = primary_vertex.tracksSize();
-  event_.pv_index     = ivvv;
+  event_.pv_indexInColl = ivvv;
   event_.pv_x         = primary_vertex.x();
   event_.pv_y         = primary_vertex.y();
   event_.pv_z         = primary_vertex.z();
