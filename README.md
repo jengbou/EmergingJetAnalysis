@@ -29,7 +29,7 @@
 
 # EmergingJetAnalysis
 
-Main repository for Emerging Jet analysis
+Main repository for Emerging Jet analysis for full Run II lagacy analyses (2016/2017/2018)
 
 
 <a id="org524970b"></a>
@@ -65,11 +65,11 @@ To install, simply execute:
 
 ### To checkout latest code
 
-    cmsrel CMSSW_7_6_3
-    cd CMSSW_7_6_3/src
+    cmsrel CMSSW_9_4_10
+    cd CMSSW_9_4_10/src
     cmsenv
     git cms-merge-topic yhshin11:fix-GetTrackTrajInfo # Needed for track trajectory info.
-    git clone https://github.com/yhshin11/EmergingJetAnalysis.git
+    git clone https://github.com/jengbou/EmergingJetAnalysis.git
 
 
 <a id="org44bd7b4"></a>

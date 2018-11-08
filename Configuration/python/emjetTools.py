@@ -1,39 +1,45 @@
 """Helper functions to consolidate different CMSSW configs"""
 import FWCore.ParameterSet.Config as cms
 
-def addSkim(process, isData=False, doJetFilter=True):
-    print "Adding Skim step."
-    print "triggerSelection should be verified for new datasets."
-    process.triggerSelection = cms.EDFilter( "TriggerResultsFilter",
-        triggerConditions = cms.vstring(
-##            # EXO-16-003
-##            'HLT_HT250_DisplacedDijet40_DisplacedTrack_v*',
-##            'HLT_HT350_DisplacedDijet40_DisplacedTrack_v*',
-##            'HLT_HT400_DisplacedDijet40_Inclusive_v*',
-##            'HLT_HT500_DisplacedDijet40_Inclusive_v*',
-
-##            # Data: Run2015*
-##            'HLT_PFHT475_v*',
-##            'HLT_PFHT600_v*',
-##            'HLT_PFHT750_4Jet_v*',
-##            'HLT_PFHT800_v*',
-##            # MC: RunIISpring15DR74
-##            'HLT_PFHT900_v*',
-        ),
-        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
-        l1tResults = cms.InputTag( "gtDigis" ),
-        l1tIgnoreMask = cms.bool( False ),
-        l1techIgnorePrescales = cms.bool( False ),
-        daqPartitions = cms.uint32( 1 ),
-        throw = cms.bool( False )
-    )
+def addSkim(process, isData=False, doJetFilter=True, doHLT=False):
+    if doHLT:
+        print "Applying HLT trigger selection"
+        print "triggerSelection should be verified for new datasets."
+        process.triggerSelection = cms.EDFilter( "TriggerResultsFilter",
+            triggerConditions = cms.vstring(
+                #2016
+                # EXO-16-003
+##                'HLT_HT250_DisplacedDijet40_DisplacedTrack_v*',
+##                'HLT_HT350_DisplacedDijet40_DisplacedTrack_v*',
+##                'HLT_HT400_DisplacedDijet40_Inclusive_v*',
+##                'HLT_HT500_DisplacedDijet40_Inclusive_v*',
+                # Data: Run2015*
+                # 'HLT_PFHT475_v*',
+                # 'HLT_PFHT600_v*',
+                # 'HLT_PFHT750_4Jet_v*',
+                # 'HLT_PFHT800_v*',
+                # MC: RunIISpring15DR74
+                #'HLT_PFHT900_v*',
+                # Signal region
+                'HLT_PFHT800_v*',
+                'HLT_PFHT900_v*',
+                # 2017
+                'HLT_PFHT1050_v*',#the only unprescaled HLT_PFHT path
+            ),
+            hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
+            l1tResults = cms.InputTag( "" ),
+            l1tIgnoreMask = cms.bool( False ),
+            l1techIgnorePrescales = cms.bool( False ),
+            daqPartitions = cms.uint32( 1 ),
+            throw = cms.bool( False )
+        )
+    doFilter = True if doJetFilter else False # doFilter must be boolean type
     process.jetFilter = cms.EDFilter("JetFilter",
-        doFilter = cms.bool( doJetFilter ),
+        doFilter = cms.bool( doFilter ),
         srcJets = cms.InputTag("ak4PFJetsCHS"),
         # srcJets = cms.InputTag("patJets"),
         # additionalCut = cms.string(""),
         additionalCut = cms.string("abs(eta) < 2.5 && pt > 50.0"),
-##        additionalCut = cms.string("abs(eta) < 3.0 && pt > 40.0"),
         jetCuts = cms.VPSet(
             cms.PSet(
                 minPt = cms.double(400.0),
@@ -55,25 +61,33 @@ def addSkim(process, isData=False, doJetFilter=True):
                 maxEta = cms.double(2.5),
                 stringCut = cms.string(""),
                 ),
-##            cms.PSet(
-##                minPt = cms.double(60.0),
-##                maxEta = cms.double(3.0),
-##                stringCut = cms.string(""),
-##                ),
-##            cms.PSet(
-##                minPt = cms.double(40.0),
-##                maxEta = cms.double(3.0),
-##                stringCut = cms.string(""),
-##                ),
         )
     )
     process.eventCountPreTrigger = cms.EDAnalyzer('EventCounter')
     process.eventCountPreFilter = cms.EDAnalyzer('EventCounter')
     process.eventCountPostFilter = cms.EDAnalyzer('EventCounter')
-    if isData:
+    ############################################################
+    # Recreate miniAOD
+    ############################################################
+##    if isData:
+##        # customisation of the process.
+##        process.load('Configuration.StandardSequences.PAT_cff')
+##        # Automatic addition of the customisation function from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+##        from PhysicsTools.PatAlgos.slimming.miniAOD_tools import miniAOD_customizeAllData
+##        #call to customisation function miniAOD_customizeAllData imported from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+##        process = miniAOD_customizeAllData(process)
+##    else:
+##        # customisation of the process.
+##        process.load('Configuration.StandardSequences.PATMC_cff')
+##        # Automatic addition of the customisation function from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+##        from PhysicsTools.PatAlgos.slimming.miniAOD_tools import miniAOD_customizeAllMC
+##        #call to customisation function miniAOD_customizeAllMC imported from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+##        process = miniAOD_customizeAllMC(process)
+    ############################################################
+    if doHLT: # Add triggerSelection
         return cms.Sequence(process.eventCountPreTrigger * process.triggerSelection * process.eventCountPreFilter * process.jetFilter * process.eventCountPostFilter)
-    else:
-        return cms.Sequence(process.eventCountPreTrigger * cms.ignore(process.triggerSelection) * process.eventCountPreFilter * process.jetFilter * process.eventCountPostFilter)
+    else: # Ignore triggerSelection
+        return cms.Sequence(process.eventCountPreTrigger * process.eventCountPreFilter * process.jetFilter * process.eventCountPostFilter)
 
 def addWJetSkim(process, isData=False):
     print "Adding WJet Skim step."
@@ -153,18 +167,104 @@ def addWJetSkim(process, isData=False):
     else:
         return cms.Sequence(process.eventCountPreTrigger * cms.ignore(process.triggerSelection) * process.eventCountPreFilter * process.wJetFilter * process.eventCountPostFilter)
 
+################################
+def addGJetSkim(process, isData=False):
+    
+    print "Adding GJet Skim step."
+    print "triggerSelection should be verified for new datasets."
+    print "photonID should be modified for each global tag."
+
+    process.triggerSelection = cms.EDFilter( "TriggerResultsFilter",
+        triggerConditions = cms.vstring(
+            # Data: Run2016*
+##            'HLT_Photon165_HE10_v*',
+            # MC: RunIISummer16DR80
+            # 2017
+            #'HLT_Photon165_R9Id90_HE10_IsoM_v*',#prescaled
+            'HLT_Photon200_v*',
+        ),
+        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
+        l1tResults = cms.InputTag( "" ),
+        l1tIgnoreMask = cms.bool( False ),
+        l1techIgnorePrescales = cms.bool( False ),
+        daqPartitions = cms.uint32( 1 ),
+        throw = cms.bool( False )
+    )
+
+    process.gJetFilter = cms.EDFilter("GJetFilter",
+        isData = cms.bool( False ),
+        srcPhotons = cms.InputTag("gedPhotons"),
+        srcJets = cms.InputTag("ak4PFJetsCHS"),
+        minPtPhoton = cms.double(175.0),
+        minDeltaR = cms.double(0.4),
+        maxDeltaPhi = cms.double(0.4), # Doesn't do anything
+        minPtSelectedJet = cms.double(20.0),
+        maxPtAdditionalJets = cms.double(20.0), # Doesn't do anything
+        #photonID = cms.string('cutBasedPhotonID-Spring15-25ns-V1-standalone-medium'),
+        #photonID = cms.string('cutBasedPhotonID-Spring16-V2p2-medium')
+        #phoMediumIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-Spring16-V2p2-medium"),#2016
+        phoMediumIdMap = cms.InputTag("egmPhotonIDs:cutBasedPhotonID-Fall17-94X-V1-medium"),#2017
+    )
+    if isData: process.gJetFilter.isData = cms.bool(True)
+    process.eventCountPreTrigger = cms.EDAnalyzer('EventCounter')
+    process.eventCountPreFilter = cms.EDAnalyzer('EventCounter')
+    process.eventCountPostFilter = cms.EDAnalyzer('EventCounter')
+
+    from PhysicsTools.SelectorUtils.tools.vid_id_tools import DataFormat,switchOnVIDElectronIdProducer,switchOnVIDPhotonIdProducer,setupAllVIDIdsInModule,setupVIDPhotonSelection
+
+    switchOnVIDElectronIdProducer(process, DataFormat.AOD)
+    switchOnVIDPhotonIdProducer(process, DataFormat.AOD)
+
+    #my_id_modules = ['RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Spring16_V2p2_cff']#2016
+
+    my_id_modules = ['RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Fall17_94X_V1_TrueVtx_cff',
+                     'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff']#2017
+
+    #add them to the VID producer
+    for idmod in my_id_modules:
+       setupAllVIDIdsInModule(process,idmod,setupVIDPhotonSelection)
+
+
+    ############################################################
+    # Recreate miniAOD
+    ############################################################
+##    if isData:
+##        # customisation of the process.
+##        process.load('Configuration.StandardSequences.PAT_cff')
+##        # Automatic addition of the customisation function from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+##        from PhysicsTools.PatAlgos.slimming.miniAOD_tools import miniAOD_customizeAllData
+##        #call to customisation function miniAOD_customizeAllData imported from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+##        process = miniAOD_customizeAllData(process)
+    #else:
+        # customisation of the process.
+    #    process.load('Configuration.StandardSequences.PATMC_cff')
+        # Automatic addition of the customisation function from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+    #    from PhysicsTools.PatAlgos.slimming.miniAOD_tools import miniAOD_customizeAllMC
+        #call to customisation function miniAOD_customizeAllMC imported from PhysicsTools.PatAlgos.slimming.miniAOD_tools
+    #    process = miniAOD_customizeAllMC(process)
+
+    ############################################################
+    # Ignore trigger selection if MC
+    if isData:
+        return cms.Sequence(process.eventCountPreTrigger * process.triggerSelection * process.eventCountPreFilter * process.egmPhotonIDSequence * process.gJetFilter * process.eventCountPostFilter)
+    else:
+        return cms.Sequence(process.eventCountPreTrigger * cms.ignore(process.triggerSelection) * process.eventCountPreFilter * process.egmPhotonIDSequence * process.gJetFilter * process.eventCountPostFilter)
+
 def addAnalyze(process, isData=False, sample=''):
     addPFHT(process, isData=False, sample='')
     from TrackingTools.TrackAssociator.default_cfi import TrackAssociatorParameterBlock
-    process.emergingJetAnalyzer = cms.EDAnalyzer('EmergingJetAnalyzer',
-        TrackAssociatorParameterBlock,
-        srcJets = cms.InputTag("jetFilter", "selectedJets"),
-        isData = cms.untracked.bool(False),
-        srcHtMht = cms.InputTag("offlinePFHT"),
-    )
-    if isData: process.emergingJetAnalyzer.isData = cms.bool( True )
-    if sample=='wjet': process.emergingJetAnalyzer.srcJets = cms.InputTag("wJetFilter")
+##    process.emergingJetAnalyzer = cms.EDAnalyzer('EmergingJetAnalyzer',
+##        TrackAssociatorParameterBlock,
+##        srcJets = cms.InputTag("jetFilter", "selectedJets"),
+##        isData = cms.untracked.bool(False),
+##        srcHtMht = cms.InputTag("offlinePFHT"),
+##    )
+##    if isData: process.emergingJetAnalyzer.isData = cms.bool( True )
+##    if sample=='wjet': process.emergingJetAnalyzer.srcJets = cms.InputTag("wJetFilter")
+##    if sample=='gjet': process.emergingJetAnalyzer.srcJets = cms.InputTag("gJetFilter", "selectedJets")
 
+    # Load jet correctors
+    process.load('JetMETCorrections.Configuration.JetCorrectors_cff')
     process.emJetAnalyzer = cms.EDFilter('EmJetAnalyzer',
         TrackAssociatorParameterBlock,
         srcJets = cms.InputTag("jetFilter", "selectedJets"),
@@ -177,16 +277,19 @@ def addAnalyze(process, isData=False, sample=''):
             minweight = cms.double( 0.5 ),
             finder = cms.string( "avr" )
         ),
-        hlTriggerResults = cms.InputTag("TriggerResults","","HLT"),
+        hlTriggerResults = cms.InputTag("TriggerResults", "", "HLT"),
+        ##metFilterResults = cms.InputTag("TriggerResults","","RECO"),
         jets = cms.untracked.InputTag("ak4CaloJets"),
         associatorVTX = cms.untracked.InputTag("ak4JTAatVX"),
         associatorCALO = cms.untracked.InputTag("ak4JTAatCAL"),
         scanMode = cms.bool(False),
         scanRandomJet = cms.bool(False),
         debug = cms.untracked.bool(False),
+        saveTracks = cms.bool(True),
     )
     if isData: process.emJetAnalyzer.isData = cms.bool( True )
     if sample=='wjet'     : process.emJetAnalyzer.srcJets = cms.InputTag("wJetFilter")
+    if sample=='gjet'     : process.emJetAnalyzer.srcJets = cms.InputTag("gJetFilter", "selectedJets")
     if sample=='recotest' : process.emJetAnalyzer.srcJets = cms.InputTag("ak4PFJetsCHS")
 
     # return cms.Sequence(process.emergingJetAnalyzer+process.emJetAnalyzer)
@@ -211,8 +314,10 @@ def addEdmOutput(process, isData=False, sample=''):
     )
     if isData : process.out.outputCommands.extend(AODEventContent.outputCommands)
     else      : process.out.outputCommands.extend(AODSIMEventContent.outputCommands)
-    if sample=='wjet' : process.out.outputCommands.extend(cms.untracked.vstring('keep *_wJetFilter_*_*',))
-    else              : process.out.outputCommands.extend(cms.untracked.vstring('keep *_jetFilter_*_*',))
+    if sample=='wjet'  : process.out.outputCommands.extend(cms.untracked.vstring('keep *_wJetFilter_*_*',))
+    elif sample=='gjet': process.out.outputCommands.extend(cms.untracked.vstring('keep *_gJetFilter_*_*',))
+    else               : process.out.outputCommands.extend(cms.untracked.vstring('keep *_jetFilter_*_*',))
+
 
 def addPFHT(process, isData=False, sample=''):
     """Copied from http://cmslxr.fnal.gov/dxr/CMSSW/source/HLTrigger/Configuration/python/HLT_25ns14e33_v1_cff.py#27446"""
@@ -251,3 +356,8 @@ def addTesting(process, isData=False, sample=''):
         jets = cms.InputTag("ak4CaloJets")
     )
     return cms.Sequence(process.ak4JTAatVX*process.ak4JTAatCAL)
+
+##def addPVTesting(process, isData=False, sample=''):
+##    process.emJetTestFilter = cms.EDFilter('EmJetTestFilter',
+##                                           )
+##    return cms.Sequence(process.emJetTestFilter)

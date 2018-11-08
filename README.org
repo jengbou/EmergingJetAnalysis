@@ -1,5 +1,5 @@
 * EmergingJetAnalysis
-Main repository for Emerging Jet analysis
+Main repository for Emerging Jet analysis for full Run II lagacy analyses (2016/2017/2018)
 ** Sub-packages
 - EmJetAnalyzer: Main analyzer - analyzes input jets and outputs flat NTuple
 - JetFilter: Applies basic kinematic selection for the signal region and outputs selected jets for analysis
@@ -14,11 +14,11 @@ pip install --user cogapp
 ** Quick instructions
 *** To checkout latest code
 #+BEGIN_SRC
-cmsrel CMSSW_7_6_3
-cd CMSSW_7_6_3/src
+cmsrel CMSSW_9_4_10
+cd CMSSW_9_4_10/src
 cmsenv
 git cms-merge-topic yhshin11:fix-GetTrackTrajInfo # Needed for track trajectory info.
-git clone https://github.com/yhshin11/EmergingJetAnalysis.git
+git clone https://github.com/jengbou/EmergingJetAnalysis.git
 #+END_SRC
 *** To setup environment and compile
 #+BEGIN_SRC

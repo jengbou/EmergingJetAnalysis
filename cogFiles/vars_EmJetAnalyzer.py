@@ -36,26 +36,31 @@ Var = namedtuple('Var', ['name', 'cpptype', 'level', ] )
 event_vars = [
     Var("run"                 , "int"   , 0 , ) ,
     Var("lumi"                , "int"   , 0 , ) ,
-    Var("event"               , "int"   , 0 , ) ,
+    Var("event"               , "unsigned long long"   , 0 , ) ,
+    # Var("event"               , "int"   , 0 , ) ,
     Var("bx"                  , "int"   , 0 , ) ,
     Var("nVtx"                , "int"   , 0 , ) ,
     Var("nGoodVtx"            , "int"   , 0 , ) ,
     Var("nTrueInt"            , "int"   , 0 , ) ,
     Var("met_pt"              , "float" , 0 , ) ,
     Var("met_phi"             , "float" , 0 , ) ,
+    Var("met_pt_JetResUp"     , "float" , 0 , ) ,
+    Var("met_pt_JetResDown"   , "float" , 0 , ) ,
+    Var("met_pt_JetEnUp"      , "float" , 0 , ) ,
+    Var("met_pt_JetEnDown"    , "float" , 0 , ) ,
+    Var("met_pt_UnclEnUp"     , "float" , 0 , ) ,
+    Var("met_pt_UnclEnDown"   , "float" , 0 , ) ,
+    Var("metT1_pt"            , "float" , 0 , ) ,
+    Var("metT1_phi"           , "float" , 0 , ) ,
+    Var("metT1_sumEt"         , "float" , 0 , ) ,
+    Var("metT1_pt_JetResUp"   , "float" , 0 , ) ,
+    Var("metT1_pt_JetResDown" , "float" , 0 , ) ,
+    Var("metT1_pt_JetEnUp"    , "float" , 0 , ) ,
+    Var("metT1_pt_JetEnDown"  , "float" , 0 , ) ,
+    Var("metT1_pt_UnclEnUp"   , "float" , 0 , ) ,
+    Var("metT1_pt_UnclEnDown" , "float" , 0 , ) ,
     Var("nTracks"             , "int"   , 0 , ) ,
-    # Primary vertex information
-    Var("pv_indexInColl"      , "int"   , 0 , ) ,
-    Var("pv_x"                , "float" , 0 , ) ,
-    Var("pv_y"                , "float" , 0 , ) ,
-    Var("pv_z"                , "float" , 0 , ) ,
-    Var("pv_xError"           , "float" , 0 , ) ,
-    Var("pv_yError"           , "float" , 0 , ) ,
-    Var("pv_zError"           , "float" , 0 , ) ,
-    Var("pv_chi2"             , "float" , 0 , ) ,
-    Var("pv_ndof"             , "float" , 0 , ) ,
-    Var("pv_pt2sum"           , "float" , 0 , ) ,
-    Var("pv_nTracks"          , "int"   , 0 , ) ,
+    Var("alpha_event"         , "float" , 0 , ) ,
     # PDF information
     Var("pdf_id1"             , "int"   , 0 , ) ,
     Var("pdf_id2"             , "int"   , 0 , ) ,
@@ -64,24 +69,41 @@ event_vars = [
     Var("pdf_pdf1"            , "float" , 0 , ) ,
     Var("pdf_pdf2"            , "float" , 0 , ) ,
     Var("pdf_scalePDF"        , "float" , 0 , ) ,
-    Var("HLT_PFHT400"         , "bool"  , 0 , ) ,
-    Var("HLT_PFHT475"         , "bool"  , 0 , ) ,
-    Var("HLT_PFHT600"         , "bool"  , 0 , ) ,
+    # Var("pdf_w0"              , "float" , 0 , ) , # PDF weight - Central value
+    # Var("pdf_delta"           , "float" , 0 , ) , # PDF weight - RMS of weights / central weight
+    #Var("HLT_PFHT400"         , "bool"  , 0 , ) ,
+    #Var("HLT_PFHT475"         , "bool"  , 0 , ) ,
+    #Var("HLT_PFHT600"         , "bool"  , 0 , ) ,
     Var("HLT_PFHT800"         , "bool"  , 0 , ) ,
     Var("HLT_PFHT900"         , "bool"  , 0 , ) ,
+    Var("HLT_PFHT1050"        , "bool"  , 0 , ) , #2017
     # Temporary (EXO-16-003 triggers)
     Var("HLT_HT250"           , "bool"  , 0 , ) , #HT250_DisplacedDijet40_DisplacedTrack
     Var("HLT_HT350"           , "bool"  , 0 , ) , #HT350_DisplacedDijet40_DisplacedTrack
     Var("HLT_HT400"           , "bool"  , 0 , ) , #HT400_DisplacedDijet40_Inclusive
     Var("HLT_HT500"           , "bool"  , 0 , ) , #HT500_DisplacedDijet40_Inclusive
+    Var("HLT_HT430"           , "bool"  , 0 , ) , #HLT_HT430_DisplacedDijet40_DisplacedTrack_v (2017)
+    Var("HLT_HT650"           , "bool"  , 0 , ) , #HLT_HT650_DisplacedDijet60_Inclusive_v (2017)
+    Var("metFilter_HBHENoise"                        , "bool"  , 0 , ) ,
+    Var("metFilter_HBHENoiseIso"                     , "bool"  , 0 , ) ,
+    Var("metFilter_EcalDeadCellTriggerPrimitive"     , "bool"  , 0 , ) ,
+    Var("metFilter_goodVertices"                     , "bool"  , 0 , ) ,
+    Var("metFilter_eeBadSc"                          , "bool"  , 0 , ) ,
+    Var("metFilter_globalTightHalo2016"              , "bool"  , 0 , ) ,
+    Var("metFilter_badChargedCandidate"              , "bool"  , 0 , ) ,
+    Var("metFilter_badPFMuon"                        , "bool"  , 0 , ) ,
 
 ]
 jet_vars = [
     Var("index"               , "int"   , 1 , ) ,
     Var("source"              , "int"   , 1 , ) ,
-    Var("pt"                  , "float" , 1 , ) ,
+    Var("ptRaw"               , "float" , 1 , ) ,
     Var("eta"                 , "float" , 1 , ) ,
     Var("phi"                 , "float" , 1 , ) ,
+    Var("pt"                  , "float" , 1 , ) ,
+    Var("ptUp"                , "float" , 1 , ) ,
+    Var("ptDown"              , "float" , 1 , ) ,
+    Var("csv"                 , "float" , 1 , ) ,
     Var("cef"                 , "float" , 1 , ) ,
     Var("nef"                 , "float" , 1 , ) ,
     Var("chf"                 , "float" , 1 , ) ,
@@ -94,7 +116,53 @@ jet_vars = [
     # Var("medianLogIpSig"      , "float" , 1 , ) ,
     Var("missHits"            , "int"   , 1 , ) ,
     Var("muonHits"            , "int"   , 1 , ) ,
+    Var("alpha"               , "float" , 1 , ) ,
+    Var("alpha2"              , "float" , 1 , ) ,
     Var("alphaMax"            , "float" , 1 , ) ,
+    Var("alphaMax2"           , "float" , 1 , ) ,
+    Var("alpha_gen"           , "float" , 1 , ) ,
+    Var("alphaMax_dz100nm"    , "float" , 1 , ) ,
+    Var("alphaMax_dz200nm"    , "float" , 1 , ) ,
+    Var("alphaMax_dz500nm"    , "float" , 1 , ) ,
+    Var("alphaMax_dz1um"      , "float" , 1 , ) ,
+    Var("alphaMax_dz2um"      , "float" , 1 , ) ,
+    Var("alphaMax_dz5um"      , "float" , 1 , ) ,
+    Var("alphaMax_dz10um"     , "float" , 1 , ) ,
+    Var("alphaMax_dz20um"     , "float" , 1 , ) ,
+    Var("alphaMax_dz50um"     , "float" , 1 , ) ,
+    Var("alphaMax_dz100um"    , "float" , 1 , ) ,
+    Var("alphaMax_dz200um"    , "float" , 1 , ) ,
+    Var("alphaMax_dz500um"    , "float" , 1 , ) ,
+    Var("alphaMax_dz1mm"      , "float" , 1 , ) ,
+    Var("alphaMax_dz2mm"      , "float" , 1 , ) ,
+    Var("alphaMax_dz5mm"      , "float" , 1 , ) ,
+    Var("alphaMax_dz1cm"      , "float" , 1 , ) ,
+    Var("alphaMax_dz2cm"      , "float" , 1 , ) ,
+    Var("alphaMax_dz5cm"      , "float" , 1 , ) ,
+    Var("alphaMax_dz10cm"     , "float" , 1 , ) ,
+    Var("alphaMax_dz20cm"     , "float" , 1 , ) ,
+    Var("alphaMax_dz50cm"     , "float" , 1 , ) ,
+    Var("alphaMax2_dz100nm"    , "float" , 1 , ) ,
+    Var("alphaMax2_dz200nm"    , "float" , 1 , ) ,
+    Var("alphaMax2_dz500nm"    , "float" , 1 , ) ,
+    Var("alphaMax2_dz1um"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz2um"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz5um"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz10um"     , "float" , 1 , ) ,
+    Var("alphaMax2_dz20um"     , "float" , 1 , ) ,
+    Var("alphaMax2_dz50um"     , "float" , 1 , ) ,
+    Var("alphaMax2_dz100um"    , "float" , 1 , ) ,
+    Var("alphaMax2_dz200um"    , "float" , 1 , ) ,
+    Var("alphaMax2_dz500um"    , "float" , 1 , ) ,
+    Var("alphaMax2_dz1mm"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz2mm"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz5mm"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz1cm"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz2cm"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz5cm"      , "float" , 1 , ) ,
+    Var("alphaMax2_dz10cm"     , "float" , 1 , ) ,
+    Var("alphaMax2_dz20cm"     , "float" , 1 , ) ,
+    Var("alphaMax2_dz50cm"     , "float" , 1 , ) ,
     Var("nDarkPions"          , "int"   , 1 , ) ,
     Var("nDarkGluons"         , "int"   , 1 , ) ,
     Var("minDRDarkPion"       , "float" , 1 , ) ,
@@ -111,9 +179,20 @@ jet_track_vars = [
     Var("pt"                  , "float" , 2 , ) ,
     Var("eta"                 , "float" , 2 , ) ,
     Var("phi"                 , "float" , 2 , ) ,
+    Var("ref_x"               , "float" , 2 , ) ,
+    Var("ref_y"               , "float" , 2 , ) ,
+    Var("ref_z"               , "float" , 2 , ) ,
+    Var("d0Error"             , "float" , 2 , ) ,
+    Var("dzError"             , "float" , 2 , ) ,
+    # Var("ref_xError"          , "float" , 2 , ) ,
+    # Var("ref_yError"          , "float" , 2 , ) ,
+    # Var("ref_zError"          , "float" , 2 , ) ,
     Var("pca_r"               , "float" , 2 , ) ,
     Var("pca_eta"             , "float" , 2 , ) ,
     Var("pca_phi"             , "float" , 2 , ) ,
+    Var("innerHit_r"          , "float" , 2 , ) ,
+    Var("innerHit_eta"        , "float" , 2 , ) ,
+    Var("innerHit_phi"        , "float" , 2 , ) ,
     Var("quality"             , "int"   , 2 , ) ,
     Var("algo"                , "int"   , 2 , ) ,
     Var("originalAlgo"        , "int"   , 2 , ) ,
@@ -130,8 +209,13 @@ jet_track_vars = [
     Var("ipXY"                , "float" , 2 , ) ,
     Var("ipZ"                 , "float" , 2 , ) , # Empty for now
     Var("ipXYSig"             , "float" , 2 , ) ,
+    Var("ip3D"                , "float" , 2 , ) ,
+    Var("ip3DSig"             , "float" , 2 , ) ,
     Var("dRToJetAxis"         , "float" , 2 , ) ,
     Var("distanceToJet"       , "float" , 2 , ) ,
+    Var("minVertexDz"         , "float" , 2 , ) ,
+    Var("pvWeight"            , "float" , 2 , ) ,
+    Var("minGenDistance"      , "float" , 2 , ) ,
 ]
 jet_vertex_vars = [
     Var("index"               , "int"   , 2 , ) ,
@@ -163,26 +247,40 @@ genparticle_vars = [
     Var("vy"                  , "float" , 1 , ) ,
     Var("vz"                  , "float" , 1 , ) ,
     # Testing vars
-    Var("min2Ddist"         , "float" , 1 , ) ,
-    Var("min2Dsig"          , "float" , 1 , ) ,
-    Var("min3Ddist"         , "float" , 1 , ) ,
-    Var("min3Dsig"          , "float" , 1 , ) ,
-    Var("minDeltaR"         , "float" , 1 , ) ,
-    Var("matched2Ddist"     , "float" , 1 , ) ,
-    Var("matched2Dsig"      , "float" , 1 , ) ,
-    Var("matched3Ddist"     , "float" , 1 , ) ,
-    Var("matched3Dsig"      , "float" , 1 , ) ,
-    Var("matchedDeltaR"     , "float" , 1 , ) ,
-    Var("Lxy"               , "int"   , 1 , ) ,
-    Var("isDark"            , "int"   , 1 , ) ,
-    Var("nDaughters"        , "int"   , 1 , ) ,
-    # Var("isDarkPion"      , "int"   , 1 , ) ,
-    Var("hasSMDaughter"     , "int"   , 1 , ) ,
-    Var("hasDarkMother"     , "int"   , 1 , ) ,
-    Var("hasDarkPionMother" , "int"   , 1 , ) ,
-    Var("isTrackable"       , "int"   , 1 , ) ,
+    Var("min2Ddist"           , "float" , 1 , ) ,
+    Var("min2Dsig"            , "float" , 1 , ) ,
+    Var("min3Ddist"           , "float" , 1 , ) ,
+    Var("min3Dsig"            , "float" , 1 , ) ,
+    Var("minDeltaR"           , "float" , 1 , ) ,
+    Var("matched2Ddist"       , "float" , 1 , ) ,
+    Var("matched2Dsig"        , "float" , 1 , ) ,
+    Var("matched3Ddist"       , "float" , 1 , ) ,
+    Var("matched3Dsig"        , "float" , 1 , ) ,
+    Var("matchedDeltaR"       , "float" , 1 , ) ,
+    Var("Lxy"                 , "float" , 1 , ) ,
+    Var("isDark"              , "int"   , 1 , ) ,
+    Var("nDaughters"          , "int"   , 1 , ) ,
+    # Var("isDarkPion"        , "int"   , 1 , ) ,
+    Var("hasSMDaughter"       , "int"   , 1 , ) ,
+    Var("hasDarkMother"       , "int"   , 1 , ) ,
+    Var("hasDarkPionMother"   , "int"   , 1 , ) ,
+    Var("isTrackable"         , "int"   , 1 , ) ,
 ]
-all_vars = event_vars + jet_vars + jet_track_vars + jet_vertex_vars + genparticle_vars
+# Primary vertex information
+pv_vars = [
+    Var("index"               , "int"   , 1 , ) ,
+    Var("x"                   , "float" , 1 , ) ,
+    Var("y"                   , "float" , 1 , ) ,
+    Var("z"                   , "float" , 1 , ) ,
+    Var("xError"              , "float" , 1 , ) ,
+    Var("yError"              , "float" , 1 , ) ,
+    Var("zError"              , "float" , 1 , ) ,
+    Var("chi2"                , "float" , 1 , ) ,
+    Var("ndof"                , "float" , 1 , ) ,
+    Var("pt2sum"              , "float" , 1 , ) ,
+    Var("nTracks"             , "int"   , 1 , ) ,
+]
+all_vars = event_vars + jet_vars + jet_track_vars + jet_vertex_vars + genparticle_vars + pv_vars
 # Pad Var fields with appropriate number of spaces
 namelength_list = [len(var.name) for var in all_vars]
 maxnamelength = max(namelength_list)
@@ -209,17 +307,19 @@ jet_vardicts         = map( var_to_dict, jet_vars         )
 jet_track_vardicts   = map( var_to_dict, jet_track_vars   )
 jet_vertex_vardicts  = map( var_to_dict, jet_vertex_vars  )
 genparticle_vardicts = map( var_to_dict, genparticle_vars )
+pv_vardicts          = map( var_to_dict, pv_vars          )
 # Add appropriate prefix for variable names
 event_vardicts       = map( make_fullname_builder(""             ) , event_vardicts       )
 jet_vardicts         = map( make_fullname_builder("jet_"         ) , jet_vardicts         )
 jet_track_vardicts   = map( make_fullname_builder("track_"       ) , jet_track_vardicts   )
 jet_vertex_vardicts  = map( make_fullname_builder("vertex_"      ) , jet_vertex_vardicts  )
 genparticle_vardicts = map( make_fullname_builder("gp_"          ) , genparticle_vardicts )
+pv_vardicts          = map( make_fullname_builder("pv_"          ) , pv_vardicts )
 # for vardict in event_vardicts      : vardict['prefix'] = ""
 # for vardict in jet_vardicts        : vardict['prefix'] = "jet_"
 # for vardict in jet_track_vardicts  : vardict['prefix'] = "track_"
 # for vardict in jet_vertex_vardicts : vardict['prefix'] = "vertex_"
-all_vardicts = event_vardicts + jet_vardicts + jet_track_vardicts + jet_vertex_vardicts + genparticle_vardicts
+all_vardicts = event_vardicts + jet_vardicts + jet_track_vardicts + jet_vertex_vardicts + genparticle_vardicts + pv_vardicts
 
 from string import Template
 def replaceSingleLine(template_string, vardict):

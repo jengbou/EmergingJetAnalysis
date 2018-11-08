@@ -427,20 +427,20 @@ WJetFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   // }
 
 
-  // std::auto_ptr< bool > _zValidity( new bool (zValidity) );
+  // std::unique_ptr< bool > _zValidity( new bool (zValidity) );
   // iEvent.put(_zValidity, "zValidity");
-  // std::auto_ptr< PolarLorentzVector > _zP4( new PolarLorentzVector (zP4) );
+  // std::unique_ptr< PolarLorentzVector > _zP4( new PolarLorentzVector (zP4) );
   // iEvent.put(_zP4, "zP4");
 
   // LogTrace("WJetFilter") << "eventPassed: " << eventPassed;
 
-  std::auto_ptr< reco::PFJetCollection > _selectedJet( new reco::PFJetCollection (selectedJet) );
-  iEvent.put(_selectedJet);
-  // std::auto_ptr< vector<double> > _deltaRs( new vector<double> (deltaRs) );
+  std::unique_ptr< reco::PFJetCollection > _selectedJet( new reco::PFJetCollection (selectedJet) );
+  iEvent.put(std::move(_selectedJet), "selectedJets");
+  // std::unique_ptr< vector<double> > _deltaRs( new vector<double> (deltaRs) );
   // iEvent.put(_deltaRs, "deltaR");
-  // std::auto_ptr< vector<double> > _deltaPhis( new vector<double> (deltaPhis) );
+  // std::unique_ptr< vector<double> > _deltaPhis( new vector<double> (deltaPhis) );
   // iEvent.put(_deltaPhis, "deltaPhi");
-  // std::auto_ptr< bool > _eventPassed( new bool (eventPassed) );
+  // std::unique_ptr< bool > _eventPassed( new bool (eventPassed) );
   // iEvent.put(_eventPassed, "eventPassed");
 
   return eventPassed;

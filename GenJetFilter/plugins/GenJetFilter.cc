@@ -99,17 +99,16 @@ GenJetFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   using namespace edm;
   edm::Handle< reco::GenJetCollection > jetCollection;
   iEvent.getByToken(jetCollectionToken_, jetCollection);
-  auto jets = *(jetCollection.product());
+  auto const & jets = *(jetCollection.product());
 
   double genHt = 0;
-  for ( auto jet : jets ) {
+  for ( auto const& jet : jets ) {
   // for ( auto jet = jets->begin(); jet != jets->end(); jet++ ) {
     if ( jet.pt() > minPt_ ) {
       genHt += jet.pt();
     }
   }
-  std::auto_ptr<double> _genHt( new double (genHt) );
-  iEvent.put(_genHt, "genHt");
+  iEvent.put(std::unique_ptr<double>( new double (genHt) ), "genHt");
 
 #ifdef THIS_IS_AN_EVENT_EXAMPLE
   Handle<ExampleData> pIn;

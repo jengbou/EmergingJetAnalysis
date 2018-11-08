@@ -75,7 +75,7 @@ class PFJetTrackAnalyzer : public edm::EDProducer {
         std::vector<float> PFJetEta_;
         std::vector<float> PFJetPhi_;
 
-        std::auto_ptr< reco::TrackCollection > associatedTracks_; // reco tracks associated with the jet
+        std::unique_ptr< reco::TrackCollection > associatedTracks_; // reco tracks associated with the jet
 };
 
 //
@@ -130,7 +130,7 @@ PFJetTrackAnalyzer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     PFJetPt_                      . clear();
     PFJetEta_                     . clear();
     PFJetPhi_                     . clear();
-    std::auto_ptr< reco::TrackCollection > associatedTracks_( new reco::TrackCollection() );
+    std::unique_ptr< reco::TrackCollection > associatedTracks_( new reco::TrackCollection() );
     //associatedTracks_->reserve(1000);
 
     int jetIndex = 0;
@@ -152,7 +152,7 @@ PFJetTrackAnalyzer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     std::cout<<"Check the first track in assoTrackCollection by its pt: "<< (*associatedTracks_)[0].pt()<<std::endl;
     tree_->Fill();
-    iEvent.put(associatedTracks_, "associatedTracks");
+    iEvent.put(std::move(associatedTracks_), "associatedTracks");
 }
 
 // ------------ method called once each job just before starting event loop  ------------

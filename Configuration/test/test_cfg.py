@@ -15,7 +15,7 @@ options.register ('data',
                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
                   VarParsing.VarParsing.varType.int,          # string, int, or float
                   "Set to 1 for data.")
-sample_options = ['signal', 'background', 'wjet', 'recotest'] # Valid options for sample
+sample_options = ['signal', 'background', 'wjet', 'gjet'] # Valid options for sample
 options.register ('sample',
                   'signal', # default value
                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
@@ -28,8 +28,34 @@ options.register ('steps',
                   VarParsing.VarParsing.varType.string,          # string, int, or float
                   "Steps to execute. Possible values: skim, analyze.")
 options.steps = ['skim', 'analyze'] # default value
+options.register ('doHLT',
+                  0, # default value
+                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
+                  VarParsing.VarParsing.varType.int,          # string, int, or float
+                  "Set to 1 to turn on HLT selection for skim step.")
+options.register ('doJetFilter',
+                  1, # default value
+                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
+                  VarParsing.VarParsing.varType.int,          # string, int, or float
+                  "Set to 1 to turn on JetFilter for skim step.")
+# options.register ('ntupleFile',
+#                   'ntuple.root', # default value
+#                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
+#                   VarParsing.VarParsing.varType.string,          # string, int, or float
+#                   "Specify plain root output file created by TFileService")
+options.register ('outputLabel',
+                  '', # default value
+                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
+                  VarParsing.VarParsing.varType.string,          # string, int, or float
+                  "Specify label for both PoolOutputModule and TFileService output files.")
 # Get and parse the command line arguments
 options.parseArguments()
+print ''
+print 'Printing options:'
+print options
+print 'Only the following options are used: crab, data, sample, steps, doHLT, doJetFilter'
+print ''
+
 # Check validity of command line arguments
 if options.sample not in sample_options:
     print 'Invalid sample type. Setting to sample type to signal.'
@@ -45,7 +71,7 @@ from EmergingJetAnalysis.Configuration.emjetTools import *
 
 process = cms.Process('TEST')
 if 'skim' in options.steps and len(options.steps)==1:
-    # If only running skim, add AOD/AODSIM and jetFilter/wJetFilter to output
+    # If only running skim, change process name
     process.setName_('SKIM')
 
 ########################################
@@ -68,7 +94,7 @@ process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(False),
 )
 
 # Unscheduled execution
-# process.options.allowUnscheduled = cms.untracked.bool(False)
+#process.options.allowUnscheduled = cms.untracked.bool(False)
 process.options.allowUnscheduled = cms.untracked.bool(True)
 
 ########################################
@@ -89,8 +115,11 @@ if 'skim' in options.steps:
             process.wJetFilter.electronID = cms.string('cutBasedElectronID-Spring15-25ns-V1-standalone-medium')
         elif 'CMSSW_7_4_1_patch4' in cmssw_version:
             process.wJetFilter.electronID = cms.string('cutBasedElectronID-CSA14-50ns-V1-standalone-medium')
+    elif options.sample=='gjet':
+        skimStep = addGJetSkim(process, isData=options.data)
     else:
-        skimStep = addSkim(process, options.data)
+        skimStep = addSkim(process, isData=options.data, doJetFilter=options.doJetFilter, doHLT=options.doHLT)
+
 ########################################
 # Analyze
 ########################################
@@ -103,6 +132,10 @@ if 'analyze' in options.steps:
     print ''
     analyzeStep = addAnalyze(process, options.data, options.sample)
 
+if options.sample=='gjet':
+    phoSrc = cms.InputTag("gedPhotons")
+    process.egmPhotonIDs.physicsObjectSrc = phoSrc
+    process.photonIDValueMapProducer.src = phoSrc
 
 ########################################
 # Testing step
@@ -112,8 +145,35 @@ testingStep = cms.Sequence()
 if testing:
     testingStep = addTesting(process, options.data, options.sample)
 
-process.p = cms.Path( skimStep * testingStep * analyzeStep )
+##testMetFilters = 0
+##if testMetFilters:
+##    process.load('RecoMET.METFilters.BadPFMuonFilter_cfi')
+##    #process.BadPFMuonFilter.muons = cms.InputTag("slimmedMuons")#miniAOD
+##    process.BadPFMuonFilter.muons = cms.InputTag("muons")
+##    process.BadPFMuonFilter.PFCandidates = cms.InputTag("packedPFCandidates")
+##    process.BadPFMuonFilter.taggingMode = cms.bool(True)
+##    process.load('RecoMET.METFilters.BadChargedCandidateFilter_cfi')
+##    #process.BadChargedCandidateFilter.muons = cms.InputTag("slimmedMuons")#miniAOD
+##    process.BadChargedCandidateFilter.muons = cms.InputTag("muons")
+##    process.BadChargedCandidateFilter.PFCandidates = cms.InputTag("packedPFCandidates")
+##    process.BadChargedCandidateFilter.taggingMode = cms.bool(True)
+##    process.emJetAnalyzer.BadChargedCandidateFilter = cms.InputTag("BadChargedCandidateFilter")
+##    process.emJetAnalyzer.BadPFMuonFilter = cms.InputTag("BadPFMuonFilter")
+##    testMetFilterStep = cms.Sequence(process.BadPFMuonFilter * process.BadChargedCandidateFilter)
 
+process.p = cms.Path( skimStep * testingStep * analyzeStep )
+##if testMetFilters: process.p = cms.Path( testMetFilterStep * skimStep * testingStep * analyzeStep )
+
+
+# MET Uncertainties
+# from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+# runMetCorAndUncFromMiniAOD(process,
+# 		isData=True,
+# )
+
+########################################
+# Configure EDM Output
+########################################
 if 'skim' in options.steps and len(options.steps)==1:
     # If only running skim, add AOD/AODSIM and jetFilter/wJetFilter to output
     print ''
@@ -127,9 +187,48 @@ else:
     process.out = cms.OutputModule("PoolOutputModule",
         fileName = cms.untracked.string('output.root'),
         outputCommands = cms.untracked.vstring('drop *'),
+        SelectEvents = cms.untracked.PSet( 
+                       SelectEvents = cms.vstring("p")
+        )
     )
-    if options.sample=='wjet' : process.out.outputCommands.extend(cms.untracked.vstring('keep *_wJetFilter_*_*',))
-    else                      : process.out.outputCommands.extend(cms.untracked.vstring('keep *_jetFilter_*_*',))
+##    if testMetFilters:
+##       process.out.outputCommands.extend(cms.untracked.vstring('keep *_BadPFMuonFilter_*_*',))
+##       process.out.outputCommands.extend(cms.untracked.vstring('keep *_BadChargedCandidateFilter_*_*',))
+
+##    if options.sample=='wjet'  : process.out.outputCommands.extend(cms.untracked.vstring('keep *_wJetFilter_*_*',))
+##    elif options.sample=='gjet': process.out.outputCommands.extend(cms.untracked.vstring('keep *_gJetFilter_*_*',))
+##    else                       : process.out.outputCommands.extend(cms.untracked.vstring('keep *_jetFilter_*_*',))
+
+testMETUnc = 0
+process.emJetAnalyzer.doPATMET = cms.untracked.bool( False )
+if testMETUnc:
+    process.emJetAnalyzer.doPATMET = cms.untracked.bool( True )
+    process.out = cms.OutputModule("PoolOutputModule",
+        compressionLevel = cms.untracked.int32(4),
+        compressionAlgorithm = cms.untracked.string('LZMA'),
+        eventAutoFlushCompressedSize = cms.untracked.int32(15728640),
+        outputCommands = cms.untracked.vstring( "keep *_slimmedMETs_*_*",
+                                                "keep *_slimmedMETsNoHF_*_*",
+                                                "keep *_patPFMet_*_*",
+                                                "keep *_patPFMetT1_*_*",
+                                                "keep *_patPFMetT1JetResDown_*_*",
+                                                "keep *_patPFMetT1JetResUp_*_*",
+                                                "keep *_patPFMetT1Smear_*_*",
+                                                "keep *_patPFMetT1SmearJetResDown_*_*",
+                                                "keep *_patPFMetT1SmearJetResUp_*_*",
+                                                "keep *_patPFMetT1Puppi_*_*",
+                                                "keep *_slimmedMETsPuppi_*_*",
+                                                ),
+        fileName = cms.untracked.string('corMETMiniAOD.root'),
+        dataset = cms.untracked.PSet(
+            filterName = cms.untracked.string(''),
+            dataTier = cms.untracked.string('')
+        ),
+        dropMetaData = cms.untracked.string('ALL'),
+        fastCloning = cms.untracked.bool(False),
+        overrideInputFileSplitLevels = cms.untracked.bool(True)
+    )
+
 
 ########################################
 # Generic configuration
@@ -140,6 +239,13 @@ elif 'CMSSW_7_4_1_patch4' in cmssw_version:
     globalTags=['MCRUN2_74_V9','74X_dataRun2_Prompt_v0']
 elif 'CMSSW_7_6_3' in cmssw_version:
     globalTags=['76X_mcRun2_asymptotic_RunIIFall15DR76_v1','76X_dataRun2_16Dec2015_v0']
+elif 'CMSSW_8_0_26_patch1' in cmssw_version:
+    # globalTags=['80X_mcRun2_asymptotic_2016_miniAODv2_v1','80X_dataRun2_2016SeptRepro_v7']
+    globalTags=['80X_mcRun2_asymptotic_2016_TrancheIV_v8','80X_dataRun2_2016SeptRepro_v7']
+elif 'CMSSW_9_4_10' in cmssw_version:
+    #globalTags=['80X_mcRun2_asymptotic_2016_TrancheIV_v8','94X_dataRun2_v6']#2016 signal
+    globalTags=['94X_mc2017_realistic_v14','94X_dataRun2_ReReco_EOY17_v6']
+else: print 'No global tag specified for CMSSW_VERSION: %s' % cmssw_version
 print 'CMSSW_VERSION is %s' % cmssw_version
 print 'Using the following global tags [MC, DATA]:'
 print globalTags
@@ -149,60 +255,83 @@ process.GlobalTag = GlobalTag(process.GlobalTag, globalTags[options.data], '')
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1)
+##process.MessageLogger.threshold = cms.untracked.string('DEBUG')
 process.MessageLogger.cerr.FwkReport.limit = 20
-process.MessageLogger.cerr.default.limit = 100
+process.MessageLogger.cerr.default.limit = 1000
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 process.source = cms.Source("PoolSource",
     # eventsToProcess = cms.untracked.VEventRange("1:36:3523-1:36:3523"),
+    # eventsToProcess = cms.untracked.VEventRange("281976:2166:min-281976:2166:max"),
+    # eventsToProcess = cms.untracked.VEventRange("281976:2166:3740421624-281976:2166:max"),
+    # eventsToProcess = cms.untracked.VEventRange("281976:2166:3739658361-281976:2166:3739658361"),
     fileNames = cms.untracked.vstring(
-        # File with single dark pions
-        # 'file:/afs/cern.ch/user/y/yoshin/work/public/temp/step2_dark.root'
-        # Model A
-        '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_1.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_100.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_101.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_102.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_104.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_105.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_106.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_107.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_108.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160201_201550/0000/aodsim_109.root',
-        # Model B
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_106.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_107.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_109.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_11.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_110.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_111.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_113.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_114.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_115.root',
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelB_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM-v1/160202_073524/0000/aodsim_116.root',
-        # signal
-        # '/store/group/phys_exotica/EmergingJets/EmergingJets_ModelA_TuneCUETP8M1_13TeV_pythia8Mod/AODSIM/150717_090102/0000/aodsim_1.root'
-        # QCD MC 74X
-        # '/store/mc/RunIISpring15DR74/QCD_HT700to1000_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/AODSIM/Asympt25ns_MCRUN2_74_V9-v1/00000/10198812-0816-E511-A2B5-AC853D9DAC1D.root'
-        # '/store/mc/RunIISpring15DR74/QCD_HT2000toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/AODSIM/Asympt25ns_MCRUN2_74_V9-v1/00000/025B6100-A217-E511-AF6F-0002C92DB46C.root'
-        # data skim
-        # '/store/group/phys_exotica/EmergingJets/DataSkim-20160302-v0/Run2015D/JetHT/DataSkim-20160302/160303_061653/0000/output_1.root'
-        # wjet
-        # '/store/group/phys_exotica/EmergingJets/wjetskim-v0/SingleMuonD-PRv3/SingleMuon/WJetSkim/151028_030342/0000/output_1.root'
-        # 'file:/afs/cern.ch/user/y/yoshin/eos/cms/store/group/phys_exotica/EmergingJets/wjetskim-v0/SingleMuonD-PRv3/SingleMuon/WJetSkim/151028_030342/0000/output_1.root'
-        # wjet MC
-        # '/store/mc/RunIISpring15DR74/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/AODSIM/Asympt25ns_MCRUN2_74_V9-v1/00000/006D71A7-73FC-E411-8C41-6CC2173BBE60.root'
-        # pickevents from data skim with alphaMax==0
-        # 'file:/afs/cern.ch/user/y/yoshin/CMSSW_7_6_3/src/EmergingJetAnalysis/scans/pickevents_alphaMax_0.root'
-        # pickevents from data skim with alphaMax>0.9
-        # 'file:/afs/cern.ch/user/y/yoshin/CMSSW_7_6_3/src/EmergingJetAnalysis/scans/pickevents_alphaMax_0p9.root'
-        # pickevents from QCD MC with alphaMax==0
-        # 'file:/afs/cern.ch/user/y/yoshin/CMSSW_7_6_3/src/EmergingJetAnalysis/scans/pickevents_alphaMax_0_QCDMCSkim_HT1500to2000.root'
+        # Signal samples
+        # 2016 EmergingJet Official MC
+        # modelA
+        #'/store/mc/RunIISummer16DR80/EmergingJets_mX-1000-m_dpi-5-tau_dpi-150_TuneCUETP8M1_13TeV_pythia8_v2/AODSIM/FlatPU0to75TuneCP0_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/70000/E8524A42-D992-E811-B912-FA163EBE0C61.root'
+        #'file:/data/users/jengbou/EmJetMC/Tests/2017/E8524A42-D992-E811-B912-FA163EBE0C61.root'
+        #'file:/home/jengbou/workspace/CMSSW_9_4_10/src/EmergingJetAnalysis/Configuration/test/output.root'# skim output
+        #'/store/mc/RunIISummer16DR80/EmergingJets_mX-1000-m_dpi-5-tau_dpi-150_TuneCUETP8M1_13TeV_pythia8_v2/AODSIM/FlatPU0to75TuneCP0_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/70000/D254A5FE-8592-E811-8345-A0369FD0B266.root'
+        # modelB
+        #'/store/mc/RunIISummer16DR80/EmergingJets_mX-1000-m_dpi-2-tau_dpi-5_TuneCUETP8M1_13TeV_pythia8_v2/AODSIM/FlatPU0to75TuneCP0_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/70000/6247EBBD-B891-E811-93E2-FA163E1199C7.root'
+
+        # 2017 QCD
+        #'/store/mc/RunIIFall17DRPremix/QCD_HT2000toInf_TuneCP5_13TeV-madgraph-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v2/100000/0AC96F0B-CD59-E811-8B9F-0CC47A4D76D2.root'
+        #'/store/mc/RunIIFall17DRPremix/QCD_HT1500to2000_TuneCP5_13TeV-madgraph-pythia8/AODSIM/94X_mc2017_realistic_v10-v1/10000/00B3E0FF-70F8-E711-9F37-0025905A6126.root'
+
+        #'/store/mc/RunIIFall17DRPremix/QCD_HT1500to2000_TuneCP5_13TeV-madgraph-pythia8/AODSIM/94X_mc2017_realistic_v10-v1/60000/64F7B641-25E8-E711-B504-FA163E5F2E72.root'
+        #'/store/mc/RunIIFall17DRPremix/QCD_HT1500to2000_TuneCP5_13TeV-madgraph-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v2/1010000/FE7566F2-9A62-E811-974F-FA163EE6807E.root'
+        # 2017 data C JetHT
+        #'/store/data/Run2017C/JetHT/AOD/17Nov2017-v1/70000/744DA565-A1DA-E711-AFDB-001E6739730A.root'
+        #'file:/data/users/jengbou/EmJet/Tests/2017/744DA565-A1DA-E711-AFDB-001E6739730A.root'
+        # SinglePhoton
+        #'/store/data/Run2017B/SinglePhoton/AOD/17Nov2017-v1/20000/58EF0879-65D3-E711-AE06-7CD30ACE0FE7.root'
+        'file:/data/users/jengbou/EmJet/Tests/2017/SinglePhoton/58EF0879-65D3-E711-AE06-7CD30ACE0FE7.root'
+        #"/store/mc/RunIIFall17DRPremix/GJets_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v1/010000/1CF5277A-B679-E811-A138-F01FAFE15CBD.root"
+        #"/store/mc/RunIIFall17DRPremix/GJets_DR-0p4_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v1/90000/8E035DB1-1150-E811-9AA4-24BE05C38CA1.root"
+        #"/store/mc/RunIIFall17DRPremix/GJets_DR-0p4_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v2/10000/D48E5941-CBB0-E811-8C56-AC1F6B0DE140.root"
+        #'/store/mc/RunIIFall17DRPremix/GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v1/00000/B6B3AB6C-CB3B-E811-8D3C-F01FAFD8F9BA.root'
+        #'/store/mc/RunIIFall17DRPremix/GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/94X_mc2017_realistic_v10-v1/30000/30B22337-02D7-E711-A2FE-0CC47A5FC619.root'
+        #'file:/data/users/jengbou/EmJetMC/Tests/2017/D48E5941-CBB0-E811-8C56-AC1F6B0DE140.root'
+        #"/store/mc/RunIIFall17DRPremix/GJets_HT-40To100_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/PU2017_94X_mc2017_realistic_v11-v2/00000/2AFFA030-37AC-E811-843A-A0369FD0B130.root"
     ),
 )
 
-process.TFileService = cms.Service("TFileService", fileName = cms.string("ntuple.root") )
+producePdfWeights = 0
+if producePdfWeights:
+# if options.data==0:
+    # Produce PDF weights (maximum is 3)
+    process.pdfWeights = cms.EDProducer("PdfWeightProducer",
+        # Fix POWHEG if buggy (this PDF set will also appear on output,
+        # so only two more PDF sets can be added in PdfSetNames if not "")
+        #FixPOWHEG = cms.untracked.string("cteq66.LHgrid"),
+        #GenTag = cms.untracked.InputTag("genParticles"),
+        PdfInfoTag = cms.untracked.InputTag("generator"),
+        PdfSetNames = cms.untracked.vstring(
+                "CT14nlo.LHgrid",
+                "NNPDF30_nlo_as_0118.LHgrid",
+                "NNPDF23_lo_as_0130_qed.LHgrid",
+                # , "MRST2006nnlo.LHgrid"
+                # , "NNPDF10_100.LHgrid"
+        )
+    )
+
+
+process.TFileService = cms.Service("TFileService", fileName = cms.string('ntuple_20181018.root') )
+
+testVertexReco = 0
+if testVertexReco:
+    # addEdmOutput(process, options.data, options.sample)
+    # Keep all objects created by emJetAnalyzer
+    process.out.outputCommands.extend(cms.untracked.vstring('keep *_emJetAnalyzer_*_*',))
+    # Keep genParticles
+    process.out.outputCommands.extend(cms.untracked.vstring('keep *_genParticles_*_*',))
+
+if options.outputLabel:
+    process.out.fileName = cms.untracked.string('output-%s.root' % options.outputLabel)
+    process.TFileService.fileName = cms.string('ntuple-%s.root' % options.outputLabel)
 
 # storage
 process.outpath = cms.EndPath(process.out)
@@ -217,4 +346,7 @@ process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 # # process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 # # process.load('JetMETCorrections.Configuration.CorrectedJetProducers_cff')
 # # # #get the jet energy corrections from the db file
-# # process.load("CondCore.CondDB.CondDB_cfi") 
+# # process.load("CondCore.CondDB.CondDB_cfi")
+
+# process.out.outputCommands = cms.untracked.vstring('drop *')
+
